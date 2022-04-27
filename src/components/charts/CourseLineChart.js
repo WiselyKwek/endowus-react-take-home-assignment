@@ -1,10 +1,12 @@
 import React from "react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, Area, ComposedChart} from "recharts";
-import {useState, useEffect} from 'react'
+import { ResponsiveContainer, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, Area, ComposedChart} from "recharts";
+import {useState} from 'react'
 
 import { Spinner, Stack, Col } from 'react-bootstrap'
 import ToolTipLabels from "./ToolTipLabels";
 import ToolTipTitle from "./ToolTipTitle"
+
+
 function CourseLineChart(){
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState([])
@@ -25,7 +27,6 @@ function CourseLineChart(){
 
         // transform rawData into suitable format for rendering graph
         let result = []
-        let areaResult = []
 
         for (let i = 0; i<rawData.length; i++){
             result[i] = {
@@ -41,23 +42,26 @@ function CourseLineChart(){
                     rawData[i]["expectedAmounts"]["75"]
                 ]
             }
-
-         
         }
+
+        // setState of data and loading after data has been processed
         setData(result)
         setLoading(false)
     }
 
+    // call function to fetch and convert data
     convertData()
-   
+
     const formatter = (v) => {
         return `S$${(v/1000000).toFixed(2)}m`
     }
 
+    // CustomToolTip component, combines ToolTipLabels and ToolTipTitle components
     const CustomToolTip = ({ active, payload, label}) => {
         if (active && payload && payload.length) {
             return (
                 <div className='custom-tooltip' style={{backgroundColor:'#e7f4ff', padding: 15, borderRadius: 5, opacity: 0.9, width:350}}>
+                    
                     {/* yearMonth */}
                     <h4>{`${label}`}</h4>
                     <hr/>
@@ -68,11 +72,10 @@ function CourseLineChart(){
                     
                         <ToolTipLabels label='Median' fontColor="blue" value={`S$${payload[2].value.toLocaleString('en-us')}`} dotColor="blue" special={false}/>
                     
-                    
                         <ToolTipLabels label='Bottom 10%' value={`S$${payload[0].value[0].toLocaleString('en-us')}`} dotColor="#7ac0ff" special={false}/>
                     
-                    
                         <ToolTipLabels label='Underperforming 2.5% p.a.' value={`${(payload[6].value*100).toFixed(1)}%`} special={true}/>
+                    
                     <br/>
                     <hr/>
                     
@@ -85,27 +88,34 @@ function CourseLineChart(){
         
     } 
 
+
     return loading ? (
-        <Stack gap={2} className="col-md-5 mx-auto">    
+        <Stack gap={2} className="col-md-5 mx-auto">
             <Spinner animation="border" variant="primary" role="status" size="lg" className="mx-auto">
             </Spinner>
             <p className="mx-auto">Loading Your Data, Please be Patient...</p>
         </Stack>
-
-        ): (
+        
+        ) : (
+        
         <React.Fragment>
         <ResponsiveContainer width="90%" height="90%" aspect={1} className="mx-auto" >
 
         <ComposedChart width={730} height={250} data={data} margin={{left:50, right:50, top:100, bottom:100}}>
+
+            {/* customise tooltip */}
             <Tooltip content={<CustomToolTip/>} />
 
+            {/* X and Y axis*/}
             <XAxis dataKey="yearMonth" interval="preserveStartEnd" />
             <YAxis tickFormatter={formatter}/>
             <Legend />
             <CartesianGrid stroke="#f5f5f5" />
             
+            {/* Area chart */}
             <Area type="monotone" name="Range (10th-75th Percentile)" dataKey="IQR" fill="#cde7ff" stroke="#7ac0ff" />
             
+            {/* Line charts */}
             <Line name="Top 25%" dataKey="Top25%" stroke="#7896b7" type="monotone" dot={false}/>
             
             <Line name="Median"dataKey="Median" stroke="blue" type="monotone" dot=
