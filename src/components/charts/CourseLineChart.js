@@ -1,7 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ResponsiveContainer, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, Area, ComposedChart} from "recharts";
-import {useState} from 'react'
-
 import { Spinner, Stack, Col } from 'react-bootstrap'
 import ToolTipLabels from "./ToolTipLabels";
 import ToolTipTitle from "./ToolTipTitle"
@@ -11,47 +9,33 @@ function CourseLineChart(){
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState([])
 
-    async function convertData() {
-        
-        // function to fetch data from API
-        const fetchData = async () => {
-            const res = await fetch("http://www.mocky.io/v2/5e69de892d00007a005f9e29?mocky-delay=2000ms")
 
-            // convert data to JSON
-            const data = res.json()
-            return data
+    const formatData = (rawData) => {
+        return {
+            "yearMonth": rawData['yearMonth'],
+            "Deposits": rawData['totalDeposit'],
+            "Bottom10%": rawData["expectedAmounts"]['10'],
+            "Median": rawData["expectedAmounts"]["50"],
+            "Top25%": rawData["expectedAmounts"]["75"],
+            "2.5%": rawData["expectedAmounts"]["benchmark"],
+            "underperforming" : rawData["chanceOfUnderPerformingBenchmark"],
+            "IQR":[
+                rawData["expectedAmounts"]['10'],
+                rawData["expectedAmounts"]["75"]
+            ]
         }
-        
-        // call fetchData function
-        const rawData = await fetchData()
-
-        // transform rawData into suitable format for rendering graph
-        let result = []
-
-        for (let i = 0; i<rawData.length; i++){
-            result[i] = {
-                "yearMonth": rawData[i]['yearMonth'],
-                "Deposits": rawData[i]['totalDeposit'],
-                "Bottom10%": rawData[i]["expectedAmounts"]['10'],
-                "Median": rawData[i]["expectedAmounts"]["50"],
-                "Top25%": rawData[i]["expectedAmounts"]["75"],
-                "2.5%": rawData[i]["expectedAmounts"]["benchmark"],
-                "underperforming" : rawData[i]["chanceOfUnderPerformingBenchmark"],
-                "IQR":[
-                    rawData[i]["expectedAmounts"]['10'],
-                    rawData[i]["expectedAmounts"]["75"]
-                ]
-            }
-        }
-
-        // setState of data and loading after data has been processed
-        setData(result)
-        setLoading(false)
     }
 
-    // call function to fetch and convert data
-    convertData()
-
+    useEffect(() => {
+        fetch("http://www.mocky.io/v2/5e69de892d00007a005f9e29?mocky-delay=2000ms")
+        .then(response => response.json())
+        .then(json => {
+            const formattedData = json.map(element => formatData(element))
+            setData(formattedData)
+            setLoading(false)
+        })
+    },[])
+    
     const formatter = (v) => {
         return `S$${(v/1000000).toFixed(2)}m`
     }
@@ -90,6 +74,7 @@ function CourseLineChart(){
 
 
     return loading ? (
+    
         <Stack gap={2} className="col-md-5 mx-auto">
             <Spinner animation="border" variant="primary" role="status" size="lg" className="mx-auto">
             </Spinner>
@@ -109,6 +94,8 @@ function CourseLineChart(){
             {/* X and Y axis*/}
             <XAxis dataKey="yearMonth" interval="preserveStartEnd" />
             <YAxis tickFormatter={formatter}/>
+            
+            
             <Legend />
             <CartesianGrid stroke="#f5f5f5" />
             
